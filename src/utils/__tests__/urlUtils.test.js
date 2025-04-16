@@ -106,8 +106,6 @@ describe('URL Encoding and Decoding', () => {
   });
 
   test('should handle URLs with fragments correctly', () => {
-    // Note: The current implementation doesn't preserve the # character exactly
-    // This test verifies that the encoding/decoding process is consistent
     const urls = [
       'https://example.com/page#section1',
       'https://docs.example.org/guide#introduction',
@@ -117,13 +115,10 @@ describe('URL Encoding and Decoding', () => {
 
     urls.forEach(url => {
       const encodedUrl = encodeUrl(url);
-      // First encode and decode to get the expected output with the current implementation
-      const expectedOutput = decodeUrl(encodedUrl);
-      // Then encode and decode again to ensure consistency
-      const reEncodedUrl = encodeUrl(expectedOutput);
-      const reDecodedUrl = decodeUrl(reEncodedUrl);
-      // The result should be consistent even if not identical to the original
-      expect(reDecodedUrl).toBe(expectedOutput);
+      const decodedUrl = decodeUrl(encodedUrl);
+
+      // The decoded URL must be exactly the same as the original URL
+      expect(decodedUrl).toBe(url);
     });
   });
 
@@ -143,8 +138,6 @@ describe('URL Encoding and Decoding', () => {
   });
 
   test('should handle URLs with unusual port numbers correctly', () => {
-    // Note: The current implementation may compress repeated digits in port numbers
-    // This test verifies that the encoding/decoding process is consistent
     const urls = [
       'https://example.com:8080/path',
       'http://localhost:3000/api',
@@ -154,24 +147,19 @@ describe('URL Encoding and Decoding', () => {
 
     urls.forEach(url => {
       const encodedUrl = encodeUrl(url);
-      // First encode and decode to get the expected output with the current implementation
-      const expectedOutput = decodeUrl(encodedUrl);
-      // Then encode and decode again to ensure consistency
-      const reEncodedUrl = encodeUrl(expectedOutput);
-      const reDecodedUrl = decodeUrl(reEncodedUrl);
-      // The result should be consistent even if not identical to the original
-      expect(reDecodedUrl).toBe(expectedOutput);
+      const decodedUrl = decodeUrl(encodedUrl);
+
+      // The decoded URL must be exactly the same as the original URL
+      expect(decodedUrl).toBe(url);
 
       // Also verify that the host part is preserved correctly
       const originalHost = url.split('/')[2].split(':')[0];
-      const decodedHost = expectedOutput.split('/')[2].split(':')[0];
+      const decodedHost = decodedUrl.split('/')[2].split(':')[0];
       expect(decodedHost).toBe(originalHost);
     });
   });
 
   test('should handle URLs with authentication information correctly', () => {
-    // Note: The current implementation doesn't preserve the @ character exactly
-    // This test verifies that the encoding/decoding process is consistent
     const urls = [
       'https://user:password@example.com',
       'http://admin@internal-site.org',
@@ -181,25 +169,19 @@ describe('URL Encoding and Decoding', () => {
 
     urls.forEach(url => {
       const encodedUrl = encodeUrl(url);
-      // First encode and decode to get the expected output with the current implementation
-      const expectedOutput = decodeUrl(encodedUrl);
-      // Then encode and decode again to ensure consistency
-      const reEncodedUrl = encodeUrl(expectedOutput);
-      const reDecodedUrl = decodeUrl(reEncodedUrl);
-      // The result should be consistent even if not identical to the original
-      expect(reDecodedUrl).toBe(expectedOutput);
+      const decodedUrl = decodeUrl(encodedUrl);
+
+      // The decoded URL must be exactly the same as the original URL
+      expect(decodedUrl).toBe(url);
 
       // Also verify that the domain part is preserved correctly
       const originalDomain = url.split('@').pop().split('/')[0];
-      const decodedUrl = expectedOutput.split('&').pop().split('/')[0];
-      expect(decodedUrl).toBe(originalDomain);
+      const decodedDomain = decodedUrl.split('@').pop().split('/')[0];
+      expect(decodedDomain).toBe(originalDomain);
     });
   });
 
   test('should handle very long URLs correctly', () => {
-    // Note: The current implementation uses RLE compression for long repeated sequences
-    // This test verifies that the encoding/decoding process is consistent
-
     // Create a very long query parameter
     const longParam = 'a'.repeat(500);
     const urls = [
@@ -210,30 +192,14 @@ describe('URL Encoding and Decoding', () => {
 
     urls.forEach(url => {
       const encodedUrl = encodeUrl(url);
-      // First encode and decode to get the expected output with the current implementation
-      const expectedOutput = decodeUrl(encodedUrl);
-      // Then encode and decode again to ensure consistency
-      const reEncodedUrl = encodeUrl(expectedOutput);
-      const reDecodedUrl = decodeUrl(reEncodedUrl);
-      // The result should be consistent even if not identical to the original
-      expect(reDecodedUrl).toBe(expectedOutput);
+      const decodedUrl = decodeUrl(encodedUrl);
 
-      // Verify that the base URL is preserved correctly
-      const originalBaseUrl = url.split('?')[0].split('/').slice(0, 3).join('/');
-      const decodedBaseUrl = expectedOutput.split('?')[0].split('/').slice(0, 3).join('/');
-      expect(decodedBaseUrl).toBe(originalBaseUrl);
-
-      // For very long repeated sequences, the encoded URL should be significantly shorter
-      // For the first test case with 500 repeated 'a' characters
-      if (url.includes('a'.repeat(100))) {
-        expect(encodedUrl.length).toBeLessThan(url.length * 0.5); // Should be at least 50% shorter
-      }
+      // The decoded URL must be exactly the same as the original URL
+      expect(decodedUrl).toBe(url);
     });
   });
 
   test('should handle URLs with unusual schemes correctly', () => {
-    // Note: The current implementation may not preserve all characters in unusual schemes
-    // This test verifies that the encoding/decoding process is consistent
     const urls = [
       'ftp://ftp.example.org/pub/files/',
       'mailto:user@example.com',
@@ -243,18 +209,10 @@ describe('URL Encoding and Decoding', () => {
 
     urls.forEach(url => {
       const encodedUrl = encodeUrl(url);
-      // First encode and decode to get the expected output with the current implementation
-      const expectedOutput = decodeUrl(encodedUrl);
-      // Then encode and decode again to ensure consistency
-      const reEncodedUrl = encodeUrl(expectedOutput);
-      const reDecodedUrl = decodeUrl(reEncodedUrl);
-      // The result should be consistent even if not identical to the original
-      expect(reDecodedUrl).toBe(expectedOutput);
+      const decodedUrl = decodeUrl(encodedUrl);
 
-      // Verify that the scheme is preserved correctly
-      const originalScheme = url.split(':')[0];
-      const decodedScheme = expectedOutput.split(':')[0];
-      expect(decodedScheme).toBe(originalScheme);
+      // The decoded URL must be exactly the same as the original URL
+      expect(decodedUrl).toBe(url);
     });
   });
 
@@ -289,10 +247,7 @@ describe('URL Encoding and Decoding', () => {
   });
 
   test('should handle edge cases for RLE compression correctly', () => {
-    // Note: The current implementation compresses sequences of exactly 4 characters
-    // This test verifies that the encoding/decoding process is consistent
-
-    // Test strings with exactly 4 repeated characters (the threshold for RLE)
+    // Test strings with exactly 4 repeated characters
     const urls = [
       'https://example.com/aaaa/bbbb',
       'https://example.com/path/with/exactly/4444/digits',
@@ -302,22 +257,10 @@ describe('URL Encoding and Decoding', () => {
 
     urls.forEach(url => {
       const encodedUrl = encodeUrl(url);
-      // First encode and decode to get the expected output with the current implementation
-      const expectedOutput = decodeUrl(encodedUrl);
-      // Then encode and decode again to ensure consistency
-      const reEncodedUrl = encodeUrl(expectedOutput);
-      const reDecodedUrl = decodeUrl(reEncodedUrl);
-      // The result should be consistent even if not identical to the original
-      expect(reDecodedUrl).toBe(expectedOutput);
+      const decodedUrl = decodeUrl(encodedUrl);
 
-      // Verify that the base URL structure is preserved
-      const originalParts = url.split('/').slice(0, 3);
-      const decodedParts = expectedOutput.split('/').slice(0, 3);
-      expect(decodedParts).toEqual(originalParts);
-
-      // Verify that the compressed version is different from the original
-      // but the length should be similar or shorter
-      expect(encodedUrl).not.toBe(url);
+      // The decoded URL must be exactly the same as the original URL
+      expect(decodedUrl).toBe(url);
     });
   });
 
@@ -338,5 +281,17 @@ describe('URL Encoding and Decoding', () => {
       const result = decodeUrl(invalidUrl);
       expect(typeof result).toBe('string');
     });
+  });
+
+  test('should decode the BBC URL correctly', () => {
+    // The decoded URL must be character for character identical to the originalURL
+    const originalUrl = 'https://www.bbc.com/news/articles/cvg7pqzk47zo';
+
+    // Test that the URL can be encoded and then decoded back
+    const encodedUrl = encodeUrl(originalUrl);
+    const decodedUrl = decodeUrl(encodedUrl);
+
+    // The decoded URL must be exactly the same as the original URL
+    expect(decodedUrl).toBe(originalUrl);
   });
 });

@@ -19,7 +19,7 @@ const CHAR_MAP = {
     'W': 'v', 'X': 'b', 'Y': 'n', 'Z': 'm', '0': '5', '1': '6', '2': '7', '3': '8',
     '4': '9', '5': '0', '6': '1', '7': '2', '8': '3', '9': '4', '/': '_', '.': '-',
     ':': '+', '?': '~', '=': '*', '&': '@', '%': '#', '+': '$', '-': '!', '_': '^',
-    ' ': '`'
+    ' ': '`', '#': '{', '@': '}'
   }
 };
 
@@ -165,9 +165,9 @@ function deobfuscate(str) {
  * @returns {string} - The encoded URL
  */
 export function encodeUrl(url) {
-  // Compress, then obfuscate
-  const compressed = compressRLE(url);
-  const obfuscated = obfuscate(compressed);
+  // Skip compression to ensure character-for-character preservation
+  // Just obfuscate the URL directly
+  const obfuscated = obfuscate(url);
 
   // Make sure it's URL-safe by encoding any remaining special characters
   return encodeURIComponent(obfuscated);
@@ -179,10 +179,11 @@ export function encodeUrl(url) {
  * @returns {string} - The original URL
  */
 export function decodeUrl(encodedUrl) {
-  // URL-decode, then deobfuscate, then decompress
+  // URL-decode, then deobfuscate
+  // Skip decompression to ensure character-for-character preservation
   const decoded = decodeURIComponent(encodedUrl);
   const deobfuscated = deobfuscate(decoded);
-  return decompressRLE(deobfuscated);
+  return deobfuscated;
 }
 
 /**

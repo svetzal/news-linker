@@ -22,61 +22,63 @@ describe('URL Encoding and Decoding', () => {
     expect(newDecodedUrl).toBe(originalUrl);
   });
 
-  test('should handle URLs with numeric IDs correctly', () => {
-    const urls = [
-      'https://example.com/article/12345',
-      'https://news.site/story/987654321',
-      'https://blog.example.org/posts/2023/05/article-123456',
-      'https://api.example.com/v1/users/42/posts/789'
-    ];
+  // Data-driven roundtrip tests for various URL patterns
+  const sampleUrls = [
+    // Numeric IDs
+    'https://example.com/article/12345',
+    'https://news.site/story/987654321',
+    'https://blog.example.org/posts/2023/05/article-123456',
+    'https://api.example.com/v1/users/42/posts/789',
+    // Query parameters
+    'https://example.com/search?q=test&page=1&limit=20',
+    'https://api.example.com/data?from=2023-01-01&to=2023-12-31&format=json',
+    'https://shop.example.com/products?category=electronics&sort=price&order=asc&page=2',
+    // Special characters
+    'https://example.com/path with spaces/resource',
+    'https://example.com/search?q=special+characters&filter=test%20value',
+    'https://example.com/path/to/resource?param=value&other=some+thing',
+    // Repeated characters
+    'https://example.com/path/with/looooooong/segment',
+    'https://example.com/search?q=repeated---------dash',
+    'https://example.com/path/to/resource?param=11111111111&other=22222222222',
+    // Fragments
+    'https://example.com/page#section1',
+    'https://docs.example.org/guide#introduction',
+    'https://example.com/article/12345#comments',
+    'https://example.com/search?q=test#results',
+    // International characters
+    'https://例子.测试/路径',
+    'https://example.com/café',
+    'https://example.com/search?q=München',
+    'https://example.com/products/名称',
+    // Very long URLs
+    `https://example.com/api?param=${'a'.repeat(500)}`,
+    `https://example.com/path/to/resource/${'segment'.repeat(50)}`,
+    `https://example.com/${'very-long-path-segment-'.repeat(20)}`,
+    // Unusual schemes
+    'ftp://ftp.example.org/pub/files/',
+    'mailto:user@example.com',
+    'tel:+1-234-567-8901',
+    'data:text/plain;base64,SGVsbG8gV29ybGQ=',
+    // Empty query parameters
+    'https://example.com/search?',
+    'https://example.com/api?param=',
+    'https://example.com/page?filter=&sort=',
+    'https://example.com/products?category=electronics&brand=',
+    // Multiple consecutive special characters
+    'https://example.com/path//with//double//slashes',
+    'https://example.com/path/with...dots',
+    'https://example.com/search?q=term&&category=books',
+    'https://example.com/path/with%20%20multiple%20%20spaces',
+    // Edge cases for RLE compression (exactly 4 repeats)
+    'https://example.com/aaaa/bbbb',
+    'https://example.com/path/with/exactly/4444/digits',
+    'https://example.com/search?q=test----dash',
+    'https://example.com/resource?id=1111&type=2222'
+  ];
 
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle URLs with query parameters correctly', () => {
-    const urls = [
-      'https://example.com/search?q=test&page=1&limit=20',
-      'https://api.example.com/data?from=2023-01-01&to=2023-12-31&format=json',
-      'https://shop.example.com/products?category=electronics&sort=price&order=asc&page=2'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle URLs with special characters correctly', () => {
-    const urls = [
-      'https://example.com/path with spaces/resource',
-      'https://example.com/search?q=special+characters&filter=test%20value',
-      'https://example.com/path/to/resource?param=value&other=some+thing'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle URLs with repeated characters correctly', () => {
-    const urls = [
-      'https://example.com/path/with/looooooong/segment',
-      'https://example.com/search?q=repeated---------dash',
-      'https://example.com/path/to/resource?param=11111111111&other=22222222222'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-      expect(decodedUrl).toBe(url);
-    });
+  test.each(sampleUrls)('should roundtrip encode/decode for %s', url => {
+    expect(decodeUrl(encodeUrl(url))).toBe(url);
   });
 
   test('generateShareableUrl should create a valid shareable URL', () => {
@@ -105,182 +107,42 @@ describe('URL Encoding and Decoding', () => {
     });
   });
 
-  test('should handle URLs with fragments correctly', () => {
-    const urls = [
-      'https://example.com/page#section1',
-      'https://docs.example.org/guide#introduction',
-      'https://example.com/article/12345#comments',
-      'https://example.com/search?q=test#results'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-
-      // The decoded URL must be exactly the same as the original URL
-      expect(decodedUrl).toBe(url);
-    });
+  // URLs with unusual port numbers: verify roundtrip and host preservation
+  test.each([
+    ['https://example.com:8080/path', 'example.com'],
+    ['http://localhost:3000/api', 'localhost'],
+    ['https://internal.example.org:8443/secure', 'internal.example.org'],
+    ['http://192.168.1.1:8888/admin', '192.168.1.1']
+  ])('should preserve host for %s', (url, host) => {
+    const decoded = decodeUrl(encodeUrl(url));
+    expect(decoded).toBe(url);
+    expect(decoded.split('/')[2].split(':')[0]).toBe(host);
   });
 
-  test('should handle URLs with international characters correctly', () => {
-    const urls = [
-      'https://例子.测试/路径',
-      'https://example.com/café',
-      'https://example.com/search?q=München',
-      'https://example.com/products/名称'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-      expect(decodedUrl).toBe(url);
-    });
+  // URLs with authentication information: verify roundtrip and domain preservation
+  test.each([
+    ['https://user:password@example.com', 'example.com'],
+    ['http://admin@internal-site.org', 'internal-site.org'],
+    ['https://api-key:secret@api.example.com/v2', 'api.example.com'],
+    ['ftp://anonymous:guest@ftp.example.org', 'ftp.example.org']
+  ])('should preserve domain for %s', (url, domain) => {
+    const decoded = decodeUrl(encodeUrl(url));
+    expect(decoded).toBe(url);
+    expect(decoded.split('@').pop().split('/')[0]).toBe(domain);
   });
 
-  test('should handle URLs with unusual port numbers correctly', () => {
-    const urls = [
-      'https://example.com:8080/path',
-      'http://localhost:3000/api',
-      'https://internal.example.org:8443/secure',
-      'http://192.168.1.1:8888/admin'
-    ];
 
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
+  // Decoding invalid encoded URLs should not throw and return a string
+  const invalidEncodedUrls = [
+    '',
+    'INVALID_ENCODED_URL',
+    'https://example.com',
+    encodeUrl('https://example.com') + 'extra-invalid-chars'
+  ];
 
-      // The decoded URL must be exactly the same as the original URL
-      expect(decodedUrl).toBe(url);
-
-      // Also verify that the host part is preserved correctly
-      const originalHost = url.split('/')[2].split(':')[0];
-      const decodedHost = decodedUrl.split('/')[2].split(':')[0];
-      expect(decodedHost).toBe(originalHost);
-    });
-  });
-
-  test('should handle URLs with authentication information correctly', () => {
-    const urls = [
-      'https://user:password@example.com',
-      'http://admin@internal-site.org',
-      'https://api-key:secret@api.example.com/v2',
-      'ftp://anonymous:guest@ftp.example.org'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-
-      // The decoded URL must be exactly the same as the original URL
-      expect(decodedUrl).toBe(url);
-
-      // Also verify that the domain part is preserved correctly
-      const originalDomain = url.split('@').pop().split('/')[0];
-      const decodedDomain = decodedUrl.split('@').pop().split('/')[0];
-      expect(decodedDomain).toBe(originalDomain);
-    });
-  });
-
-  test('should handle very long URLs correctly', () => {
-    // Create a very long query parameter
-    const longParam = 'a'.repeat(500);
-    const urls = [
-      `https://example.com/api?param=${longParam}`,
-      `https://example.com/path/to/resource/${'segment'.repeat(50)}`,
-      `https://example.com/${'very-long-path-segment-'.repeat(20)}`
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-
-      // The decoded URL must be exactly the same as the original URL
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle URLs with unusual schemes correctly', () => {
-    const urls = [
-      'ftp://ftp.example.org/pub/files/',
-      'mailto:user@example.com',
-      'tel:+1-234-567-8901',
-      'data:text/plain;base64,SGVsbG8gV29ybGQ='
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-
-      // The decoded URL must be exactly the same as the original URL
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle URLs with empty query parameters correctly', () => {
-    const urls = [
-      'https://example.com/search?',
-      'https://example.com/api?param=',
-      'https://example.com/page?filter=&sort=',
-      'https://example.com/products?category=electronics&brand='
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle URLs with multiple consecutive special characters correctly', () => {
-    const urls = [
-      'https://example.com/path//with//double//slashes',
-      'https://example.com/path/with...dots',
-      'https://example.com/search?q=term&&category=books',
-      'https://example.com/path/with%20%20multiple%20%20spaces'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle edge cases for RLE compression correctly', () => {
-    // Test strings with exactly 4 repeated characters
-    const urls = [
-      'https://example.com/aaaa/bbbb',
-      'https://example.com/path/with/exactly/4444/digits',
-      'https://example.com/search?q=test----dash',
-      'https://example.com/resource?id=1111&type=2222'
-    ];
-
-    urls.forEach(url => {
-      const encodedUrl = encodeUrl(url);
-      const decodedUrl = decodeUrl(encodedUrl);
-
-      // The decoded URL must be exactly the same as the original URL
-      expect(decodedUrl).toBe(url);
-    });
-  });
-
-  test('should handle decoding of invalid encoded URLs gracefully', () => {
-    // Test with some invalid encoded URLs
-    const invalidEncodedUrls = [
-      '', // Empty string
-      'INVALID_ENCODED_URL', // Random string
-      'https://example.com', // Unencoded URL
-      encodeUrl('https://example.com') + 'extra-invalid-chars' // Valid encoding with extra characters
-    ];
-
-    invalidEncodedUrls.forEach(invalidUrl => {
-      // Should not throw an error
-      expect(() => decodeUrl(invalidUrl)).not.toThrow();
-
-      // The result might not be meaningful, but the function should return something
-      const result = decodeUrl(invalidUrl);
-      expect(typeof result).toBe('string');
-    });
+  test.each(invalidEncodedUrls)('should decode invalid encoded URL "%s" gracefully', invalidUrl => {
+    expect(() => decodeUrl(invalidUrl)).not.toThrow();
+    expect(typeof decodeUrl(invalidUrl)).toBe('string');
   });
 
   test('should decode the BBC URL correctly', () => {
